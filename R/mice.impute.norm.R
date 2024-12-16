@@ -74,13 +74,15 @@ norm.draw <- function(y, ry, x, rank.adjust = TRUE, ...) {
 .norm.draw <- function(y, ry, x, rank.adjust = TRUE, ...) {
   p <- estimice(x[ry, , drop = FALSE], y[ry], ...)
   sigma.star <- sqrt(sum((p$r)^2) / rchisq(1, p$df))
-  beta.star <- p$c + (t(chol(sym(p$v))) %*% rnorm(ncol(x))) * sigma.star
+  if (any(is.na(p$c)) & rank.adjust) {
+    p$c[is.na(p$c)] <- 0
+  }
+  r.c <- (t(chol(sym(p$v))) %*% rnorm(ncol(x))) * sigma.star
+  r.c <- r.c[order(lm.fit(x = x[ry, , drop = FALSE], y = y[ry])$qr$pivot), ]
+  beta.star <- p$c + r.c
   parm <- list(p$c, beta.star, sigma.star, p$ls.meth)
   names(parm) <- c("coef", "beta", "sigma", "estimation")
-  if (any(is.na(parm$coef)) & rank.adjust) {
-    parm$coef[is.na(parm$coef)] <- 0
-    parm$beta[is.na(parm$beta)] <- 0
-  }
+
   parm
 }
 
